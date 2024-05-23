@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pexels Random Media</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .media {
+            margin-top: 20px;
+        }
+        img, video {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+        .photographer {
+            margin-top: 10px;
+            color: #666;
+        }
+        .search-container {
+            margin-top: 20px;
+        }
+        .search-container input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 60%;
+            font-size: 16px;
+        }
+        .search-container button {
+            padding: 10px 20px;
+        }
+        .remaining-requests {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Pexels Random Media</h1>
+    <button onclick="getRandomPhoto()">Get Random Photo</button>
+    <button onclick="getRandomVideo()">Get Random Video</button>
+
+    <div class="search-container">
+        <input type="text" id="search-query" placeholder="Search photos or videos...">
+        <button onclick="searchMedia()">Search</button>
+    </div>
+
+    <div class="media" id="media"></div>
+    <div class="remaining-requests" id="remaining-requests">Remaining API Requests: <span id="remaining-count">0</span></div>
+    <button onclick="getRemainingRequests()">Check Remaining Requests</button>
+</div>
+
+<script>
+    async function getRandomPhoto() {
+        const response = await fetch('/api/random-photo');
+        const photo = await response.json();
+
+        document.getElementById('media').innerHTML = `
+                <img src="${photo.src.large}" alt="Random Photo">
+                <div class="photographer">Photo by: <a href="${photo.photographer_url}" target="_blank">${photo.photographer}</a></div>
+            `;
+    }
+
+    async function getRandomVideo() {
+        const response = await fetch('/api/random-video');
+        const video = await response.json();
+
+        document.getElementById('media').innerHTML = `
+                <video controls>
+                    <source src="${video.video_files[0].link}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            `;
+    }
+
+    async function searchMedia() {
+        const query = document.getElementById('search-query').value;
+        const page = 1;
+        const perPage = 10;
+
+        const photoResponse = await fetch(`/api/search-photo?query=${query}&page=${page}&per_page=${perPage}`);
+        const photoResult = await photoResponse.json();
+
+        const videoResponse = await fetch(`/api/search-video?query=${query}&page=${page}&per_page=${perPage}`);
+        const videoResult = await videoResponse.json();
+
+        let html = '';
+
+        if (photoResult.photos && photoResult.photos.length > 0) {
+            html += '<h2>Photos</h2>';
+            photoResult.photos.forEach(photo => {
+                html += `
+                        <img src="${photo.src.large}" alt="Photo">
+                        <div class="photographer">Photo by: <a href="${photo.photographer_url}" target="_blank">${photo.photographer}</a></div>
+                    `;
+            });
+        }
+
+        if (videoResult.videos && videoResult.videos.length > 0) {
+            html += '<h2>Videos</h2>';
+            videoResult.videos.forEach(video => {
+                html += `
+                        <video controls>
+                            <source src="${video.video_files[0].link}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    `;
+            });
+        }
+
+        document.getElementById('media').innerHTML = html;
+    }
+
+    async function getRemainingRequests() {
+        const response = await fetch('/api/remaining-requests');
+        const data = await response.json();
+
+        document.getElementById('remaining-count').textContent = data.remaining_requests;
+    }
+
+    // Sayfa yüklendiğinde kalan istek sayısını güncelle
+    document.addEventListener('DOMContentLoaded', getRemainingRequests);
+</script>
+</body>
+</html>
